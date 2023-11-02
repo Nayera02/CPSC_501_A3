@@ -10,7 +10,7 @@ import java.lang.reflect.*;
 public class Serializer {
     private static int uniqueId = 0;
 
-    public static void serializeIt(Object obj){
+    public static org.jdom2.Document serializeIt(Object obj){
         Document dom = new Document();
 
         Class objectClass = obj.getClass();
@@ -55,42 +55,38 @@ public class Serializer {
 
            
 
-        }
+        }else{
 
-
-
-        /*for(Field f : objectClass.getFields()){
-            try{
-                Object value = f.get(obj);
-                String name = f.getName();
-                
-                Element fieldElement = new Element("Field");
-                fieldElement.setAttribute("name", name);
-                fieldElement.setAttribute("declaringClass", f.getDeclaringClass().getName());
-                objElement.addContent(fieldElement);
-
-                if(value.getClass().isPrimitive() || value.getClass().getName().equals("java.lang.String")  ){
+            for(Field f : objectClass.getFields()){
+                try{
+                    Object value = f.get(obj);
+                    String name = f.getName();
                     
-                    Element fieldValue = new Element("Value");
-                    fieldValue.setText(value.toString());
-                    fieldElement.addContent(fieldValue);
-                }else{
+                    Element fieldElement = new Element("Field");
+                    fieldElement.setAttribute("name", name);
+                    fieldElement.setAttribute("declaringClass", f.getDeclaringClass().getName());
+                    objElement.addContent(fieldElement);
 
-                    Element fieldRef = new Element("Reference");
-                    //fieldRef.setText(uniqueIdentifierMap.get(value).toString());
-                    fieldElement.addContent(fieldRef);
+                    if(value.getClass().isPrimitive() || value.getClass().getName().equals("java.lang.String")  ){
+                        
+                        Element fieldValue = new Element("Value");
+                        fieldValue.setText(value.toString());
+                        fieldElement.addContent(fieldValue);
+                    }else{
+
+                        Element fieldRef = new Element("Reference");
+                        //fieldRef.setText(uniqueIdentifierMap.get(value).toString());
+                        fieldElement.addContent(fieldRef);
+                    }
+
+                }catch(Exception e){
+                    System.out.println(e.getMessage());
                 }
-
-            }catch(Exception e){
-                System.out.println(e.getMessage());
             }
-        }*/
-
+        }
         // Seventh - Print out the document using XMLOutputter class
-        XMLOutputter xmlOutputter = new XMLOutputter(Format.getPrettyFormat());
-        String xmlString = xmlOutputter.outputString(dom);
-        System.out.println(xmlString);
-        
+       
+        return dom;
     }
 
 
@@ -99,6 +95,9 @@ public class Serializer {
         doggy.setName("Clifford");
         doggy.setType("Wolf");
         String [] arr = {"12","13"};
-        serializeIt(arr);
+        Document dom = serializeIt(doggy);
+        XMLOutputter xmlOutputter = new XMLOutputter(Format.getPrettyFormat());
+        String xmlString = xmlOutputter.outputString(dom);
+        System.out.println(xmlString);
     }
 }
