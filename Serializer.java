@@ -14,7 +14,7 @@ public class Serializer {
         Document dom = new Document();
 
         Class objectClass = obj.getClass();
-        System.out.println(objectClass.isPrimitive());
+        //System.out.println(objectClass.isPrimitive());
 
         Element rootElement = new Element("serialized");
         dom.setRootElement(rootElement);
@@ -33,12 +33,33 @@ public class Serializer {
 
         rootElement.addContent(objElement);
 
-
       
+        
+        if (objectClass.isArray()){
+           
+            objElement.setAttribute("length", String.valueOf(Array.getLength(obj)));
+            
+            if(objectClass.getComponentType().isPrimitive() || objectClass.getComponentType().getName().equals("java.lang.String")){
+                for (int i = 0; i < Array.getLength(obj); i++) {
+                    Element arrayValue = new Element("Value");
+                    arrayValue.setText(String.valueOf(Array.get(obj, i)));
+                    objElement.addContent(arrayValue);
+                }
+            }else{
+                for (int i = 0; i < Array.getLength(obj); i++) {
+                    Element fieldRef = new Element("Reference");
+                    
+                }
+            }
+
+
+           
+
+        }
 
 
 
-        for(Field f : objectClass.getFields()){
+        /*for(Field f : objectClass.getFields()){
             try{
                 Object value = f.get(obj);
                 String name = f.getName();
@@ -63,7 +84,7 @@ public class Serializer {
             }catch(Exception e){
                 System.out.println(e.getMessage());
             }
-        }
+        }*/
 
         // Seventh - Print out the document using XMLOutputter class
         XMLOutputter xmlOutputter = new XMLOutputter(Format.getPrettyFormat());
@@ -77,7 +98,7 @@ public class Serializer {
         Dog doggy = new Dog();
         doggy.setName("Clifford");
         doggy.setType("Wolf");
-       // int [] arr = {0,1,2};
-        serializeIt(doggy);
+        String [] arr = {"12","13"};
+        serializeIt(arr);
     }
 }
