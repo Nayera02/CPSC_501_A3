@@ -1,18 +1,22 @@
 public class Address {
-    private String street;
-    private String city;
+    private int streetNum;
+    private int cityCode;
 
     // Constructor and getters/setters for street and city
-    public Address(String street, String city) {
-        this.street = street;
-        this.city = city;
+     public Address(){
+        streetNum = 0;
+        cityCode = 0;
+     }
+    public Address(int streetNum, int cityCode) {
+        this.streetNum = streetNum;
+        this.cityCode = cityCode;
     }
 
-    public String getStreet() {
-        return street;
+    public int getStreetNum() {
+        return streetNum;
     }
 
-    public String getCity() {
-        return city;
+    public int getCityCode() {
+        return cityCode;
     }
 }

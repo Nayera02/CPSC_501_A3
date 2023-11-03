@@ -1,15 +1,20 @@
 public class Person{
-    public String name;
+    public int id;
     public Address address;
 
+    public Person(){
+        id = 0;
+        address = null;
+    }
+
     // Constructor and getters/setters for name and address
-    public Person(String name, Address address) {
-        this.name = name;
+    public Person(int id, Address address) {
+        this.id = id;
         this.address = address;
     }
 
-    public String getName() {
-        return name;
+    public int getID() {
+        return id;
     }
 
     public Address getAddress() {

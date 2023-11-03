@@ -1,3 +1,5 @@
+import java.util.IdentityHashMap;
+
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.output.Format;
@@ -16,10 +18,13 @@ import java.util.Map;
 
 import java.util.ArrayList;
 
+import java.util.HashMap;
+///////////////////////////////////////////////////////////////////////////
+
 public class Serializer {
     private static int uniqueId = 0;
     private static IdentityHashMap<Object, Integer> uniqueIdentifierMap = new IdentityHashMap<>();
-    public static org.jdom2.Document serializeIt(Object obj){
+    public static org.jdom2.Document serialize(Object obj){
         Document dom = new Document();
 
         Class objectClass = obj.getClass();
@@ -29,49 +34,65 @@ public class Serializer {
 
         //IdentityHashMap<Object, Integer> uniqueIdentifierMap = new IdentityHashMap<>();
         
-        Element objElement = new Element("Object");
-        uniqueIdentifierMap.put(objectClass, uniqueId);
+        Element objElement = new Element("object");
+        //uniqueIdentifierMap.put(objectClass, uniqueId);
 
         objElement.setAttribute("class", objectClass.getName());
-        objElement.setAttribute("id", String.valueOf(uniqueIdentifierMap.get(objectClass)) );
+       
 
-        uniqueId++;
+        //uniqueId++;
 
         rootElement.addContent(objElement);
 
       
-        
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+
         if (objectClass.isArray()){
            
             objElement.setAttribute("length", String.valueOf(Array.getLength(obj)));
             
-            if(objectClass.getComponentType().isPrimitive() || objectClass.getComponentType().getName().equals("java.lang.String")){
+            if(objectClass.getComponentType().isPrimitive() ){
                 for (int i = 0; i < Array.getLength(obj); i++) {
-                    Element arrayValue = new Element("Value");
-                    arrayValue.setText(String.valueOf(Array.get(obj, i)));
+                    Element arrayValue = new Element("value");
+                    Object item = Array.get(obj, i);
+                    //arrayValue.addContent(String.valueOf(item));
+                    arrayValue.setText(item.toString());
                     objElement.addContent(arrayValue);
                 }
             }else{
                 for (int i = 0; i < Array.getLength(obj); i++) {
-                    Element arrayRef = new Element("Reference");
+                    Element arrayRef = new Element("reference");
 
-                    if(!uniqueIdentifierMap.containsKey(Array.get(obj, i).getClass())){
-                            serializeIt(Array.get(obj, i));
+                    if(!uniqueIdentifierMap.containsKey(Array.get(obj, i))){
+                            //serializeIt(Array.get(obj, i));
+                            serializeRef(Array.get(obj, i), rootElement);
                         }
                         
-                    arrayRef.setText(String.valueOf(uniqueIdentifierMap.get(Array.get(obj, i).getClass())));
+                    arrayRef.setText(String.valueOf(uniqueIdentifierMap.get(Array.get(obj, i))));
                     objElement.addContent(arrayRef);
 
-
-
-
-
-                    //fieldRef.setText(identityHashMap.get().toString());
                 }
             }
+        }else if(obj instanceof ArrayList){
+            //collection serializiation
+            ArrayList<?> arrayList = (ArrayList<?>) obj;
+            // Collection serialization
+           // System.out.println("Collection:" + obj.getClass().getName());
+            //System.out.println(String.valueOf(arrayList.size()));
+            objElement.setAttribute("length", String.valueOf(arrayList.size()));
 
+            for(int i = 0; i< arrayList.size(); i++){
+                 Element arrayRef = new Element("reference");
 
-           
+                if(!uniqueIdentifierMap.containsKey(arrayList.get(i))){
+                        //serializeIt(Array.get(obj, i));
+                        serializeRef(arrayList.get(i), rootElement);
+                    }
+                    
+                arrayRef.setText(String.valueOf(uniqueIdentifierMap.get(arrayList.get(i))));
+                objElement.addContent(arrayRef);
+            }
+
 
         }else{
             for(Field f : objectClass.getDeclaredFields()){
@@ -80,26 +101,30 @@ public class Serializer {
                     Object value = f.get(obj);
                     String name = f.getName();
 
-                    Element fieldElement = new Element("Field");
+                    Element fieldElement = new Element("field");
                     fieldElement.setAttribute("name", name);
                     fieldElement.setAttribute("declaringClass", f.getDeclaringClass().getName());
                     objElement.addContent(fieldElement);
-
-                    if(value.getClass().isPrimitive() || value.getClass().getName().equals("java.lang.String")  ){
+     
+                    if(f.getType().isPrimitive() || f.getType().getName().equals("java.lang.String")  ){
                         
-                        Element fieldValue = new Element("Value");
+                        Element fieldValue = new Element("value");
                         fieldValue.setText(value.toString());
                         fieldElement.addContent(fieldValue);
                     }else{
 
-                        Element fieldRef = new Element("Reference");
+                        Element fieldRef = new Element("reference");
                         // check if that class has been serialized yet
-                        if(!uniqueIdentifierMap.containsKey(f.get(obj).getClass())){
-                            serializeIt(f.get(obj));
+                        if(!uniqueIdentifierMap.containsKey(f.get(obj))){
+                            //serializeIt(f.get(obj));
+                            serializeRef(f.get(obj), rootElement);
+                            
+                            ////////////////////////////////////////////////////////////////////////////trial
+
                             
                         }
                         
-                        fieldRef.setText(String.valueOf(uniqueIdentifierMap.get(f.get(obj).getClass())));
+                        fieldRef.setText(String.valueOf(uniqueIdentifierMap.get(f.get(obj))));
                         fieldElement.addContent(fieldRef);
                     }
 
@@ -108,88 +133,99 @@ public class Serializer {
                 }
             }
         }
+        
+        uniqueIdentifierMap.put(obj, uniqueId);
+        uniqueId++;
+         objElement.setAttribute("id", String.valueOf(uniqueIdentifierMap.get(obj)) );
        
         return dom;
     }
 
+    public static void serializeRef(Object refObj, Element rootElement){
+        Element refElement = new Element("object");
+        Class refClass = refObj.getClass();
 
-    public static Object deserialize(org.jdom2.Document document){
-        
-        Object obj = new Object();
-        // Load the dom into a nicer format and use it
-        XMLOutputter xmlOutputter = new XMLOutputter(Format.getPrettyFormat());
-        String xmlString = xmlOutputter.outputString(document);
-        System.out.println(xmlString);
+        uniqueIdentifierMap.put(refObj, uniqueId);
 
-        Element rootElement = document.getRootElement();
+        refElement.setAttribute("class", refClass.getName());
+        refElement.setAttribute("id", String.valueOf(uniqueIdentifierMap.get(refObj)) );
 
-        List<Element> xmlObjects = rootElement.getChildren("Object");
+        uniqueId++;
 
-        for(Element elementObject: xmlObjects){
-            System.out.println("Object Details: ");
-            //System.out.println("name: " + elementObject.getName());
+        rootElement.addContent(refElement);
 
+         
+        if (refClass.isArray()){
            
-            System.out.println("Object Class: " + elementObject.getAttributeValue("class"));
-
-            List<Element> fields = elementObject.getChildren("Field");
-
-            System.out.println("");
-
-            for(Element field:fields){
-                System.out.println("Field name: " + field.getAttributeValue("name"));
-                System.out.println("Declaring class: " + field.getAttributeValue("declaringClass"));
-
-                System.out.println("");
-			}
+            refElement.setAttribute("length", String.valueOf(Array.getLength(refObj)));
             
+            if(refClass.getComponentType().isPrimitive() || refClass.getComponentType().getName().equals("java.lang.String")){
+                for (int i = 0; i < Array.getLength(refObj); i++) {
+                    Element arrayValue = new Element("value");
+                    arrayValue.setText(String.valueOf(Array.get(refObj, i)));
+                    refElement.addContent(arrayValue);
+                }
+            }else{
+                for (int i = 0; i < Array.getLength(refObj); i++) {
+                    Element arrayRef = new Element("reference");
+
+                    if(!uniqueIdentifierMap.containsKey(Array.get(refObj, i))){
+                            //serializeIt(Array.get(refObj, i));
+                            System.out.println("works");
+                        }
+                        
+                    arrayRef.setText(String.valueOf(uniqueIdentifierMap.get(Array.get(refObj, i))));
+                    refElement.addContent(arrayRef);
+
+
+
+
+
+                    //fieldRef.setText(identityHashMap.get().toString());
+                }
+            }
+        }else{
+            for(Field f : refClass.getDeclaredFields()){
+                try{
+                    f.setAccessible(true);
+                    Object value = f.get(refObj);
+                    String name = f.getName();
+
+                    Element fieldElement = new Element("field");
+                    fieldElement.setAttribute("name", name);
+                    fieldElement.setAttribute("declaringClass", f.getDeclaringClass().getName());
+                    refElement.addContent(fieldElement);
+     
+                    if(f.getType().isPrimitive() || f.getType().getName().equals("java.lang.String")  ){
+                        
+                        Element fieldValue = new Element("value");
+                        fieldValue.setText(value.toString());
+                        fieldElement.addContent(fieldValue);
+                    }else{
+
+                        Element fieldRef = new Element("reference");
+                        // check if that class has been serialized yet
+                        if(!uniqueIdentifierMap.containsKey(f.get(refObj))){
+                            //serializeIt(f.get(refObj));
+                            serializeRef(f.get(refObj), rootElement);
+
+                            ////////////////////////////////////////////////////////////////////////////trial
+
+                            
+                        }
+                        
+                        fieldRef.setText(String.valueOf(uniqueIdentifierMap.get(f.get(refObj))));
+                        fieldElement.addContent(fieldRef);
+                    }
+
+                }catch(Exception e){
+                    System.out.println(e.getMessage());
+                }
+            }
+
         }
 
-        return obj;
+
     }
-
-   
-    public static void main(String[] args){
-        /*Dog doggy = new Dog();
-        doggy.setName("Clifford");
-        doggy.setType("Wolf");*/
-
-
-        //primitive array
-        int [] arr = {11, 19};
-
-        //simple
-        Address address = new Address("ss", "cc");
-        //object with another object reference
-        Person person = new Person("p1", address);
-
-        //array of object references
-        Address [] addresses = new Address[2];
-        addresses[0] = new Address("s1", "c1");
-        addresses[1] = new Address("s2", "c2");
-
-        //collection
-        ArrayList<Address> addressList = new ArrayList<>();
-        addressList.add(new Address("s1", "c1"));
-        addressList.add(new Address("s2", "c2"));
-
-
-
-       
-        Document dom = serializeIt(addresses);
-
-
-
-        XMLOutputter xmlOutputter = new XMLOutputter(Format.getPrettyFormat());
-        String xmlString = xmlOutputter.outputString(dom);
-        System.out.println(xmlString);
-
-        for (Map.Entry<Object, Integer> entry : uniqueIdentifierMap.entrySet()) {
-            Object key = entry.getKey();
-            int value = entry.getValue();
-            System.out.println("Key: " + key + ", Value: " + value);
-        }
-        //writeXmlToFile(dom);
-       // deserialize(dom);
-    }
+     
 }
